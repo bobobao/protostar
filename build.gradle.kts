@@ -4,10 +4,13 @@
 
 plugins {
     java
+    groovy
     `maven-publish`
 }
 
 repositories {
+    maven(url = "https://maven.aliyun.com/repository/central")
+    maven(url = "https://maven.aliyun.com/repository/jcenter")
     mavenLocal()
     maven {
         url = uri("https://repo.maven.apache.org/maven2/")
@@ -15,8 +18,13 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains:annotations:22.0.0")
     implementation("org.slf4j:slf4j-api:1.7.32")
+
     implementation("io.netty:netty-buffer:4.1.71.Final")
+
+    implementation("org.codehaus.groovy:groovy-all:3.0.8")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.slf4j:slf4j-simple:1.7.32")
 }

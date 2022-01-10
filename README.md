@@ -2,15 +2,18 @@
 ====================
 
 ### 特性
+
 - **纯粹**, 严格按照字节顺序和长度写入，不产生额外的描述性信息；
 - **性能**, 基于Netty的ByteBuf，可使用池化内存与堆外内存提升性能；
-- **多版本**, 同一个Class支持多个版本的配置。 
+- **多版本**, 同一个Class支持多个版本的配置。
 
 ### 场景
+
 - 适用于多数序列化场景，用于传输或存储对象；
 - 开发初期的目的是为了解析部标、国标相关的通讯协议。
 
 ### 使用
+
 ```java
 
 public class Test {
@@ -80,15 +83,18 @@ public class Test {
 ```
 
 ### Maven
+
   ```xml
-  <dependency>
+
+<dependency>
     <groupId>io.github.yezhihao</groupId>
     <artifactId>protostar</artifactId>
     <version>1.0.0.RELEASE</version>
-  </dependency>
+</dependency>
   ```
-  
+
 ### 代码仓库
+
 * Gitee仓库地址：[https://gitee.com/yezhihao/protostar/tree/master](https://gitee.com/yezhihao/protostar/tree/master)
 * Github仓库地址：[https://github.com/yezhihao/protostar/tree/master](https://github.com/yezhihao/protostar/tree/master)
 
@@ -101,3 +107,11 @@ public class Test {
 如有任何疑问或者BUG，请联系我，非常感谢。
 
 技术交流QQ群：[906230542]
+
+### Extend Groovy
+
+相较于源库添加了从 Groovy 动态载入类的功能。`GroovySchemaManager` 支持从本地文件动态加载 `Message`
+类，其类加载器可以通过 `groovySchemaManager.getGroovyClassLoader()` 获取。
+
+本 fork 库主要是为了用于 JT808 mock server `Groovy`
+的自定义报文发送。如仅为实现标准功能，请使用原库 [yezhihao/protostar](https://github.com/yezhihao/protostar) 。

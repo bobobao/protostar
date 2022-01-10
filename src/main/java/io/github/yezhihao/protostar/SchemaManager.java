@@ -10,14 +10,16 @@ import java.util.Map;
 
 /**
  * 多版本Schema管理器
+ *
  * @author yezhihao
  * https://gitee.com/yezhihao/jt808-server
  */
+@SuppressWarnings("rawtypes")
 public class SchemaManager {
 
-    private final Map<Integer, Map<Integer, RuntimeSchema>> typeIdMapping;
+    final Map<Integer, Map<Integer, RuntimeSchema>> typeIdMapping;
 
-    private final Map<String, Map<Integer, RuntimeSchema>> typeClassMapping;
+    final Map<String, Map<Integer, RuntimeSchema>> typeClassMapping;
 
     public SchemaManager() {
         this(128);
@@ -55,6 +57,7 @@ public class SchemaManager {
     public <T> RuntimeSchema<T> getRuntimeSchema(Class<T> typeClass, Integer version) {
         Map<Integer, RuntimeSchema> schemaMap = ProtostarUtil.getRuntimeSchema(typeClassMapping, typeClass);
         if (schemaMap == null) return null;
+        //noinspection unchecked
         return schemaMap.get(version);
     }
 
