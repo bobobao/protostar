@@ -1,9 +1,7 @@
 package io.github.yezhihao.protostar;
 
 import io.github.yezhihao.protostar.util.Explain;
-import io.github.yezhihao.protostar.util.Info;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 
 /**
  * 消息结构
@@ -14,56 +12,57 @@ public interface Schema<T> {
 
     T readFrom(ByteBuf input);
 
-    default T readFrom(ByteBuf input, int length) {
-        return readFrom(input);
-//        throw new RuntimeException("不支持长度读取");
-    }
-
     void writeTo(ByteBuf output, T value);
 
-    default void writeTo(ByteBuf output, int length, T value) {
-        writeTo(output, value);
-//        throw new RuntimeException("不支持长度写入");
+    default T readFrom(ByteBuf input, int length) {
+        int readerLength = input.readerIndex() + length;
+        int writerIndex = input.writerIndex();
+        input.writerIndex(readerLength);
+        T value = readFrom(input);
+        input.setIndex(readerLength, writerIndex);
+        return value;
     }
 
-    default void writeTo(ByteBuf output, T value, Explain explain) {
-        int begin = output.writerIndex();
-
+    default void writeTo(ByteBuf output, int length, T value) {
+        int writerLength = output.writerIndex() + length;
         writeTo(output, value);
-
-        int end = output.writerIndex();
-        String raw = ByteBufUtil.hexDump(output, begin, end - begin);
-        explain.add(Info.field(begin, desc(), value, raw));
+        output.writerIndex(writerLength);
     }
 
     default T readFrom(ByteBuf input, Explain explain) {
         int begin = input.readerIndex();
-
         T value = readFrom(input);
-
-        int end = input.readerIndex();
-        String raw = ByteBufUtil.hexDump(input, begin, end - begin);
-        explain.add(Info.field(begin, desc(), value, raw));
+        explain.readField(begin, desc(), value, input);
         return value;
+    }
+
+    default void writeTo(ByteBuf output, T value, Explain explain) {
+        int begin = output.writerIndex();
+        writeTo(output, value);
+        explain.writeField(begin, desc(), value, output);
     }
 
     default T readFrom(ByteBuf input, int length, Explain explain) {
-        int begin = input.readerIndex();
-
-        T value = readFrom(input, length);
-
-        int end = input.readerIndex();
-        String raw = ByteBufUtil.hexDump(input, begin, end - begin);
-        explain.add(Info.field(begin, desc(), value, raw));
+        int readerLength = input.readerIndex() + length;
+        int writerIndex = input.writerIndex();
+        input.writerIndex(readerLength);
+        T value = readFrom(input, explain);
+        input.setIndex(readerLength, writerIndex);
         return value;
     }
 
-    default String desc() {
-        return "";
+    default void writeTo(ByteBuf output, int length, T value, Explain explain) {
+        int writerLength = output.writerIndex() + length;
+        writeTo(output, value, explain);
+        output.writerIndex(writerLength);
     }
 
     /** 用于预估内存分配，不需要精确值 */
     default int length() {
         return 32;
+    }
+
+    default String desc() {
+        return "";
     }
 }

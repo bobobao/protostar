@@ -1,9 +1,7 @@
 package io.github.yezhihao.protostar.field;
 
 import io.github.yezhihao.protostar.Schema;
-import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.util.Explain;
-import io.github.yezhihao.protostar.util.Info;
 import io.github.yezhihao.protostar.util.IntTool;
 import io.netty.buffer.ByteBuf;
 
@@ -15,32 +13,36 @@ import java.util.Collection;
  * @author yezhihao
  * https://gitee.com/yezhihao/jt808-server
  */
-public class TotalCollectionField extends BasicField {
+public class TotalCollectionField<T> extends BasicField<Collection<T>> {
 
-    protected final IntTool intTool;
+    private final Schema<T> schema;
+    private final int totalUnit;
+    private final IntTool intTool;
 
-    public TotalCollectionField(Field field, java.lang.reflect.Field f, Schema schema) {
-        super(field, f, schema);
-        this.intTool = IntTool.getInstance(field.totalUnit());
+    public TotalCollectionField(Schema<T> schema, int totalUnit) {
+        this.schema = schema;
+        this.totalUnit = totalUnit;
+        this.intTool = IntTool.getInstance(totalUnit);
     }
 
-    public Object readFrom(ByteBuf input) {
+    @Override
+    public Collection<T> readFrom(ByteBuf input) {
         int total = intTool.read(input);
         if (total <= 0)
             return null;
-        ArrayList value = new ArrayList<>(total);
+        ArrayList<T> list = new ArrayList<>(total);
         for (int i = 0; i < total; i++) {
-            Object t = schema.readFrom(input);
-            value.add(t);
+            T t = schema.readFrom(input);
+            list.add(t);
         }
-        return value;
+        return list;
     }
 
-    public void writeTo(ByteBuf output, Object value) {
-        if (value != null) {
-            Collection list = (Collection) value;
+    @Override
+    public void writeTo(ByteBuf output, Collection<T> list) {
+        if (list != null) {
             intTool.write(output, list.size());
-            for (Object t : list) {
+            for (T t : list) {
                 schema.writeTo(output, t);
             }
         } else {
@@ -49,18 +51,31 @@ public class TotalCollectionField extends BasicField {
     }
 
     @Override
-    public Object readFrom(ByteBuf input, Explain explain) {
-        int begin = input.readerIndex();
+    public Collection<T> readFrom(ByteBuf input, Explain explain) {
         int total = intTool.read(input);
-        explain.add(Info.lengthField(begin, desc, total));
-
+        explain.lengthField(input.readerIndex() - totalUnit, desc + "数量", total, totalUnit);
         if (total <= 0)
             return null;
-        ArrayList value = new ArrayList<>(total);
+        ArrayList<T> list = new ArrayList<>(total);
         for (int i = 0; i < total; i++) {
-            Object t = schema.readFrom(input, explain);
-            value.add(t);
+            T t = schema.readFrom(input, explain);
+            list.add(t);
         }
-        return value;
+        return list;
+    }
+
+    @Override
+    public void writeTo(ByteBuf output, Collection<T> list, Explain explain) {
+        if (list != null) {
+            int total = list.size();
+            explain.lengthField(output.writerIndex(), desc + "数量", total, totalUnit);
+            intTool.write(output, total);
+            for (T t : list) {
+                schema.writeTo(output, t, explain);
+            }
+        } else {
+            explain.lengthField(output.writerIndex(), desc + "数量", 0, totalUnit);
+            intTool.write(output, 0);
+        }
     }
 }

@@ -14,20 +14,19 @@ import java.lang.reflect.Constructor;
  */
 public class RuntimeSchema<T> implements Schema<T> {
 
-    protected final int version;
-    protected final int length;
-    protected final Class<T> typeClass;
-    protected final BasicField[] fields;
-    protected final Constructor<T> constructor;
+    protected int version;
+    protected int length;
+    protected Class<T> typeClass;
+    protected BasicField[] fields;
+    protected Constructor<T> constructor;
 
     public RuntimeSchema(Class<T> typeClass, int version, BasicField[] fields) {
         this.typeClass = typeClass;
         this.version = version;
         this.fields = fields;
         int length = 0;
-        for (BasicField field : fields) {
-            length += field.length() > 0 ? field.length() : 32;
-        }
+        for (BasicField field : fields)
+            length += field.length();
         this.length = length;
         try {
             this.constructor = typeClass.getDeclaredConstructor((Class[]) null);
@@ -45,124 +44,91 @@ public class RuntimeSchema<T> implements Schema<T> {
     }
 
     public T mergeFrom(ByteBuf input, T result) {
-        BasicField field = null;
+        int i = 0;
         try {
-            for (int i = 0; i < fields.length; i++) {
-                if (!input.isReadable())
-                    break;
-                field = fields[i];
-                Object value = field.readFrom(input);
-                field.set(result, value);
-            }
+            for (; i < fields.length; i++)
+                fields[i].readAndSet(input, result);
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("Read failed " + typeClass.getName() + field, e);
+            throw new RuntimeException("Read failed " + i + " " + typeClass.getName() + " " + fields[i].fieldName(), e);
         }
     }
 
     public T mergeFrom(ByteBuf input, T result, Explain explain) {
-        BasicField field = null;
+        int i = 0;
         try {
-            for (int i = 0; i < fields.length; i++) {
-                if (!input.isReadable())
-                    break;
-                field = fields[i];
-                Object value = field.readFrom(input, explain);
-                field.set(result, value);
-            }
+            if (explain == null)
+                for (; i < fields.length; i++)
+                    fields[i].readAndSet(input, result);
+            else
+                for (; i < fields.length; i++)
+                    fields[i].readAndSet(input, result, explain);
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("Read failed " + typeClass.getName() + field, e);
+            throw new RuntimeException("Read failed " + i + " " + typeClass.getName() + " " + fields[i].fieldName(), e);
         }
     }
 
     public T readFrom(ByteBuf input) {
-        BasicField field = null;
+        int i = 0;
         try {
             T result = constructor.newInstance((Object[]) null);
-            for (int i = 0; i < fields.length; i++) {
-                if (!input.isReadable())
-                    break;
-                field = fields[i];
-                Object value = field.readFrom(input);
-                field.set(result, value);
-            }
+            for (; i < fields.length; i++)
+                fields[i].readAndSet(input, result);
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("Read failed " + typeClass.getName() + field, e);
+            throw new RuntimeException("Read failed " + i + " " + typeClass.getName() + " " + fields[i].fieldName(), e);
         }
     }
-
 
     public T readFrom(ByteBuf input, Explain explain) {
-        BasicField field = null;
+        int i = 0;
         try {
             T result = constructor.newInstance((Object[]) null);
-            for (int i = 0; i < fields.length; i++) {
-                if (!input.isReadable())
-                    break;
-                field = fields[i];
-
-                Object value = field.readFrom(input, explain);
-                field.set(result, value);
-            }
+            if (explain == null)
+                for (; i < fields.length; i++)
+                    fields[i].readAndSet(input, result);
+            else
+                for (; i < fields.length; i++)
+                    fields[i].readAndSet(input, result, explain);
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("Read failed " + typeClass.getName() + field, e);
+            throw new RuntimeException("Read failed " + i + " " + typeClass.getName() + " " + fields[i].fieldName(), e);
         }
-    }
-
-    @Override
-    public T readFrom(ByteBuf input, int length) {
-        int writerIndex = input.writerIndex();
-        input.writerIndex(input.readerIndex() + length);
-        T result = readFrom(input);
-        input.writerIndex(writerIndex);
-        return result;
-    }
-
-    @Override
-    public T readFrom(ByteBuf input, int length, Explain explain) {
-        int writerIndex = input.writerIndex();
-        input.writerIndex(input.readerIndex() + length);
-        T result = readFrom(input, explain);
-        input.writerIndex(writerIndex);
-        return result;
     }
 
     @Override
     public void writeTo(ByteBuf output, T message) {
-        BasicField field = null;
+        int i = 0;
         try {
-            for (int i = 0; i < fields.length; i++) {
-                field = fields[i];
-                Object value = field.get(message);
-                field.writeTo(output, value);
-            }
+            for (; i < fields.length; i++)
+                fields[i].getAndWrite(output, message);
         } catch (Exception e) {
-            throw new RuntimeException("Write failed " + typeClass.getName() + field, e);
+            throw new RuntimeException("Write failed " + i + " " + typeClass.getName() + " " + fields[i].fieldName(), e);
         }
     }
 
     @Override
     public void writeTo(ByteBuf output, T message, Explain explain) {
-        BasicField field = null;
+        int i = 0;
         try {
-            for (int i = 0; i < fields.length; i++) {
-                field = fields[i];
-                Object value = field.get(message);
-                field.writeTo(output, value, explain);
-            }
+            if (explain == null)
+                for (; i < fields.length; i++)
+                    fields[i].getAndWrite(output, message);
+            else
+                for (; i < fields.length; i++)
+                    fields[i].getAndWrite(output, message, explain);
         } catch (Exception e) {
-            throw new RuntimeException("Write failed " + typeClass.getName() + field, e);
+            throw new RuntimeException("Write failed " + i + " " + typeClass.getName() + " " + fields[i].fieldName(), e);
         }
     }
 
-    @Override
-    public void writeTo(ByteBuf output, int length, T message) {
-        int writerIndex = output.writerIndex();
-        writeTo(output, message);
-        output.writerIndex(writerIndex + length);
+    public Class<T> typeClass() {
+        return typeClass;
+    }
+
+    public int version() {
+        return version;
     }
 
     public int length() {
@@ -172,8 +138,7 @@ public class RuntimeSchema<T> implements Schema<T> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder(48);
-        sb.append('{');
-        sb.append("typeClass=").append(typeClass.getSimpleName());
+        sb.append("{typeClass=").append(typeClass.getSimpleName());
         sb.append(", version=").append(version);
         sb.append(", length=").append(length);
         sb.append('}');

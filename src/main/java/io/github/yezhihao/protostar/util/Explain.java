@@ -1,42 +1,47 @@
 package io.github.yezhihao.protostar.util;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * 编解码分析
  * @author yezhihao
  * https://gitee.com/yezhihao/jt808-server
  */
-public class Explain {
+public class Explain extends LinkedList<Info> {
 
-    private List<Info> list;
-
-    public Explain() {
-        this.list = new LinkedList<>();
+    public void readField(int index, String desc, Object value, ByteBuf input) {
+        if (value != null)
+            this.add(Info.field(index, desc, value, ByteBufUtil.hexDump(input, index, input.readerIndex() - index)));
     }
 
-    public void add(Info info) {
-        list.add(info);
+    public void writeField(int index, String desc, Object value, ByteBuf output) {
+        if (value != null)
+            this.add(Info.field(index, desc, value, ByteBufUtil.hexDump(output, index, output.writerIndex() - index)));
     }
 
-    public List<Info> getList() {
-        return list;
+    public Info lengthField(int index, String desc, int length, int lengthUnit) {
+        Info info = Info.lengthField(index, desc, length, lengthUnit);
+        this.add(info);
+        return info;
     }
 
     public void setLastDesc(String desc) {
-        list.get(list.size() - 1).desc = desc;
-    }
-
-    public void setList(List<Info> list) {
-        this.list = list;
+        this.get(this.size() - 1).desc = desc;
     }
 
     public void println() {
-        for (Info info : list) {
-            Object value = info.getValue();
-            if (value != null)
-                System.out.println(info.getIndex() + "\t" + "[" + info.getRaw() + "] " + info.getDesc() + ": " + StrUtils.toString(value));
-        }
+        for (Info info : this)
+            System.out.println(info);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(this.size() << 5);
+        for (Info info : this)
+            sb.append(info).append('\n');
+        return sb.toString();
     }
 }

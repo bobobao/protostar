@@ -14,10 +14,10 @@ import java.lang.annotation.*;
 public @interface Field {
 
     /** 排序,默认使用代码顺序 */
-    int index() default -1;
+    int index() default 0;
 
     /** 长度,默认使用类型长度,-1读取剩余长度 */
-    int length() default 0;
+    int length() default -1;
 
     /** 该字段的前置长度单位 1.BYTE 2.WORD 3.MEDIUM 4.DWORD */
     int lengthUnit() default -1;
@@ -31,7 +31,9 @@ public @interface Field {
     /** 描述 */
     String desc() default "";
 
-    int[] version() default {-1, 0, 1};
+    /** 版本号,默认不区分 */
+    int[] version() default {};
 
+    /** 自定义转换器 */
     Class<? extends Schema> converter() default Schema.class;
 }
